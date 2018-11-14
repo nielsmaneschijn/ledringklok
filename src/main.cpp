@@ -32,7 +32,7 @@ float solar;
 // leds
 #include <NeoPixelBus.h>
 
-const uint16_t PixelCount = 16;
+const uint16_t PixelCount = 12;
 const uint8_t PixelPin = 2;  // make sure to set this to the correct pin, ignored for Esp8266
 
 #define colorSaturation 16
@@ -121,6 +121,7 @@ void reconnect() {
 
 void setup() {
   pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
+  digitalWrite(BUILTIN_LED, 0); // led aan
   Serial.begin(115200);
   setup_wifi();
   client.setServer(mqtt_server, 1883);
@@ -140,11 +141,23 @@ void setup() {
       // this resets all the neopixels to an off state
     strip.Begin();
     strip.Show();
+    digitalWrite(BUILTIN_LED, 1); // led uit
 
 }
 
 boolean powersave() {
   return hour() < poweron || hour() >= poweroff; 
+}
+
+void error(RgbColor color) {
+  // 3 manieren om een fout af te handelen:
+  // 1: doe niks -> de laatste kleur blijft staan
+  
+  // 2: in geval van twijfel -> niks tonen. paint it black!
+  //  paint(black);
+
+  // 3: informatieve maar irritante kleurtjes
+  // paint(color);
 }
 
 void paint(RgbColor color) {
@@ -186,14 +199,14 @@ if(WiFi.status()== WL_CONNECTED){ //Check WiFi connection status
       }
       Serial.println(somerain ? "rain" : "no rain");
     } else {
-      paint(yellow);
+      error(yellow);
       delay(5000);
     }
 
     http.end(); //Close connection
   } else {
     Serial.println("Error in WiFi connection");   
-    paint(purple);
+    error(purple);
     delay(5000);
   }
   return somerain;
@@ -208,7 +221,8 @@ void loop() {
   // client.loop();
 
 Serial.println (NTP.getTimeDateString()); 
-// Serial.println(NTP.getLastNTPSync());
+Serial.println(NTP.getLastNTPSync());
+
 
 
   // if (raincheck()) {
@@ -224,7 +238,7 @@ Serial.println (NTP.getTimeDateString());
   Serial.println(second());
   strip.SetPixelColor(second()*PixelCount/60, blue); 
   strip.SetPixelColor(minute()*PixelCount/60, green); 
-  strip.SetPixelColor(hourFormat12()*PixelCount/12, red); 
+  strip.SetPixelColor((hour()%12)*PixelCount/12, red); 
   strip.Show();
 
   delay(1000); //Send a request every 300 seconds
